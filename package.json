@@ -1,0 +1,15 @@
+{
+  "name": "bun_project",
+  "module": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.js",
+    "dev": "bun --hot src/index.js"
+  },
+  "devDependencies": {
+    "bun-types": "^1.0.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
