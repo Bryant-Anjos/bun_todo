@@ -1,14 +1,38 @@
 import { serve } from 'bun'
 
 import db from './db'
+import Router from './services/router'
 
 serve({
   port: 8080,
-  fetch(request, response) {
-    const url = new URL(request.url)
+  fetch(request) {
+    const router = new Router(request)
 
-    if (url.pathname === '/todos/new') {
-      const text = url.searchParams.get('text')
+    router.get('todos', () => {
+      const query = db.prepare('SELECT * FROM todo')
+      const response = query.all()
+      query.finalize()
+
+      return Response.json(response)
+    })
+
+    router.get('todos/:id', req => {
+      const { id } = req.params
+
+      const query = db.prepare('SELECT * FROM todo WHERE id = ?')
+      const [todo] = query.all(id)
+      query.finalize()
+
+      if (!todo) {
+        return Response.json({ error: 'Todo not found.' }, { status: 404 })
+      }
+
+      return Response.json(todo)
+    })
+
+    router.post('todos', async req => {
+      const body = await req.json()
+      const { text } = body
 
       if (!text) {
         return Response.json({ error: 'text not found.' }, { status: 400 })
@@ -19,23 +43,16 @@ serve({
       query.finalize()
 
       return Response.json(todo, { status: 201 })
-    }
+    })
 
-    if (url.pathname === '/todos/all') {
-      const query = db.prepare('SELECT * FROM todo')
-      const response = query.all()
-      query.finalize()
-
-      return Response.json(response)
-    }
-
-    if (/^\/todos\/(.+)\/done\/?$/.test(url.pathname)) {
-      const done = url.searchParams.get('done')
+    router.patch('todos/:id', async req => {
+      const body = await req.json()
+      const { done } = body
       let isDone
 
-      if (done === 'true') {
+      if (done === true) {
         isDone = 1
-      } else if (done === 'false') {
+      } else if (done === false) {
         isDone = 0
       } else {
         return Response.json(
@@ -44,7 +61,7 @@ serve({
         )
       }
 
-      const [, id] = /^\/todos\/(.+)\/done\/?$/.exec(url.pathname)
+      const { id } = req.params
 
       const query = db.prepare('UPDATE todo SET done = $done WHERE id = $id')
       query.run({
@@ -54,28 +71,18 @@ serve({
       query.finalize()
 
       return Response.json({ ok: true })
-    }
+    })
 
-    if (/^\/todos\/(.+)\/get\/?$/.test(url.pathname)) {
-      const [, id] = /^\/todos\/(.+)\/get\/?$/.exec(url.pathname)
-
-      const query = db.prepare('SELECT * FROM todo WHERE id = ?')
-      const [todo] = query.all(id)
-      query.finalize()
-
-      return Response.json(todo)
-    }
-
-    if (/^\/todos\/(.+)\/delete\/?$/.test(url.pathname)) {
-      const [, id] = /^\/todos\/(.+)\/delete\/?$/.exec(url.pathname)
+    router.delete('todos/:id', req => {
+      const { id } = req.params
 
       const query = db.prepare('DELETE FROM todo WHERE id = ?')
       query.run(id)
       query.finalize()
 
       return Response.json({ ok: true })
-    }
+    })
 
-    return Response.json({ 404: 'Not found!' }, { status: 404 })
+    return router.response
   },
 })
