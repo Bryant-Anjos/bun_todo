@@ -1,19 +1,11 @@
 import { serve } from 'bun'
 
-import Router from './services/router'
-import { todosController } from './modules/todos.module'
+import TodosRoutes from './routes/todos.routes'
 
 serve({
   port: 8080,
   fetch(request) {
-    const router = new Router(request)
-
-    router.get('todos', todosController.list)
-    router.get('todos/:id', todosController.get)
-    router.post('todos', todosController.create)
-    router.patch('todos/:id', todosController.update)
-    router.delete('todos/:id', todosController.delete)
-
-    return router.response
+    const todosRoutes = new TodosRoutes(request)
+    return todosRoutes.getResponse()
   },
 })
