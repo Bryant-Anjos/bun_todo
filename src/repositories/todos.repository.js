@@ -1,27 +1,22 @@
 import Todo from '../models/todo.model'
 
 export default class TodosRepository {
-  #db
+  #database
 
   constructor(db) {
-    this.#db = db
+    this.#database = db
   }
 
   getAll = () => {
-    const query = this.#db.prepare('SELECT * FROM todo')
-    const response = query.all()
-
-    query.finalize()
-
+    const response = this.#database.runSQL('SELECT * FROM todo')
     const todos = response.map(item => new Todo(item.id, item.text, item.done))
     return todos
   }
 
   getById = id => {
-    const query = this.#db.prepare('SELECT * FROM todo WHERE id = ?')
-    const [item] = query.all(id)
-
-    query.finalize()
+    const [item] = this.#database.runSQL('SELECT * FROM todo WHERE id = $id', {
+      $id: id,
+    })
 
     if (!item) {
       return null
@@ -32,13 +27,10 @@ export default class TodosRepository {
   }
 
   create = text => {
-    const query = this.#db.prepare(
-      'INSERT INTO todo (text) VALUES (?) RETURNING *',
+    const [item] = this.#database.runSQL(
+      'INSERT INTO todo (text) VALUES ($text) RETURNING *',
+      { $text: text },
     )
-    const [item] = query.all(text)
-
-    query.finalize()
-
     const todo = new Todo(item.id, item.text, item.done)
     return todo
   }
@@ -52,19 +44,13 @@ export default class TodosRepository {
       isDone = 0
     }
 
-    const query = this.#db.prepare(
-      'UPDATE todo SET done = $done WHERE id = $id',
-    )
-    query.run({
+    this.#database.runSQL('UPDATE todo SET done = $done WHERE id = $id', {
       $done: isDone,
       $id: id,
     })
-    query.finalize()
   }
 
   delete = id => {
-    const query = this.#db.prepare('DELETE FROM todo WHERE id = ?')
-    query.run(id)
-    query.finalize()
+    this.#database.runSQL('DELETE FROM todo WHERE id = $id', { $id: id })
   }
 }

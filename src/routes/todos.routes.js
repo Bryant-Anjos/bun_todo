@@ -1,20 +1,21 @@
-import { todosController } from '../modules/todos.module'
 import Router from '../services/router'
 
 export default class TodosRoutes {
   #router
+  #todosController
 
-  constructor(request) {
+  constructor(request, todosController) {
     this.#router = new Router(request)
+    this.#todosController = todosController
     this.#routes()
   }
 
   #routes = () => {
-    this.#router.get('todos', todosController.list)
-    this.#router.get('todos/:id', todosController.get)
-    this.#router.post('todos', todosController.create)
-    this.#router.patch('todos/:id', todosController.update)
-    this.#router.delete('todos/:id', todosController.delete)
+    this.#router.get('todos', this.#todosController.list)
+    this.#router.get('todos/:id', this.#todosController.get)
+    this.#router.post('todos', this.#todosController.create)
+    this.#router.patch('todos/:id', this.#todosController.update)
+    this.#router.delete('todos/:id', this.#todosController.delete)
   }
 
   getResponse = () => {
