@@ -1,10 +1,7 @@
 import { serve } from 'bun'
 
-import db from './db'
 import Router from './services/router'
-import TodosController from './controllers/todos.controller'
-
-const todosController = new TodosController(db)
+import { todosController } from './modules/todos.module'
 
 serve({
   port: 8080,
